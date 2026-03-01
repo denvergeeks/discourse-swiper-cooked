@@ -23,7 +23,7 @@ export default class MediaElementParser {
    * Parses a DOM root element and extract media elements with captions
    * Captions are any element following the media element until another media element or non-paragraph element
    *
-   * TODO: Not complete. Experimenting with optional captions, nested swipers, and others elements such as videos.
+   * Extended to support iframes and cooked content blocks
    *
    * @param {HTMLElement} root
    * @returns {Array} items
@@ -37,6 +37,20 @@ export default class MediaElementParser {
 
       if (this.isWrap(node)) {
         items.push({ type: "nested", items: this.run(node) });
+        continue;
+      }
+
+      // NEW: Handle iFrames
+      if (this.isIframe(node)) {
+        const captionHtml = this.extractFollowingCaption(nodes, i + 1);
+        this.pushMediaItem(items, "iframe", node, captionHtml);
+        continue;
+      }
+
+      // NEW: Handle cooked content blocks
+      if (this.isCookedContent(node)) {
+        const captionHtml = this.extractFollowingCaption(nodes, i + 1);
+        this.pushMediaItem(items, "cooked", node, captionHtml);
         continue;
       }
 
@@ -78,9 +92,49 @@ export default class MediaElementParser {
           ? node.tagName === "IMG"
             ? node.cloneNode(true)
             : node.querySelector("img:not(.emoji)")?.cloneNode(true)
+          : type === "cooked"
+          ? this.createCookedThumbnail(node)
           : null,
       caption: this.wrapCaption(captionHtml),
     });
+  }
+
+  // NEW: Detect iFrame elements
+  static isIframe(node) {
+    return (
+      node.nodeType === Node.ELEMENT_NODE &&
+      (node.tagName === "IFRAME" ||
+        node.matches?.("iframe") ||
+        node.querySelector?.("iframe"))
+    );
+  }
+
+  // NEW: Detect cooked content blocks (marked with specific class or data attribute)
+  static isCookedContent(node) {
+    return (
+      node.nodeType === Node.ELEMENT_NODE &&
+      (node.matches?.(".cooked-content") ||
+        node.matches?.(".swiper-cooked-slide") ||
+        node.matches?.("[data-swiper-cooked]") ||
+        node.classList?.contains("cooked-content") ||
+        node.classList?.contains("swiper-cooked-slide"))
+    );
+  }
+
+  // NEW: Create thumbnail for cooked content (first image or text preview)
+  static createCookedThumbnail(node) {
+    // Try to find first image for thumbnail
+    const img = node.querySelector("img:not(.emoji)");
+    if (img) {
+      return img.cloneNode(true);
+    }
+    
+    // Fallback: create text-based thumbnail
+    const thumbnail = document.createElement("div");
+    thumbnail.className = "cooked-thumbnail";
+    const textContent = node.textContent?.trim().substring(0, 100) || "Content";
+    thumbnail.textContent = textContent + (textContent.length >= 100 ? "..." : "");
+    return thumbnail;
   }
 
   static isParagraph(node) {
@@ -107,14 +161,14 @@ export default class MediaElementParser {
     return node.nodeType === Node.ELEMENT_NODE && node.matches?.("div.d-wrap");
   }
 
-  // Collect subsequent <p> elements (until a wrap/video/element that's not <p>)
+  // Collect subsequent <p> elements (until a wrap/video/iframe/cooked/element that's not <p>)
   static extractFollowingCaption(nodes, startIndex) {
     let html = "";
 
     for (let i = startIndex; i < nodes.length; i++) {
       const n = nodes[i];
 
-      if (this.isWrap(n) || this.isVideo(n)) {
+      if (this.isWrap(n) || this.isVideo(n) || this.isIframe(n) || this.isCookedContent(n)) {
         break;
       }
 
