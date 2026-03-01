@@ -342,6 +342,31 @@ export default class SwiperInline extends Component {
                     </div>
                   {{/if}}
                 --}}
+
+                {{!-- NEW: iFrame support --}}
+                {{else if (eq data.type "iframe")}}
+                  <div class="swiper-iframe-wrapper">
+                    {{data.node}}
+                  </div>
+                  {{#if data.caption}}
+                    <div class="swiper-slide-content">
+                      {{htmlSafe data.caption}}
+                    </div>
+                  {{/if}}
+
+                {{!-- NEW: Cooked content support --}}
+                {{else if (eq data.type "cooked")}}
+                  <div class="swiper-cooked-wrapper">
+                    <div class="cooked-content">
+                      {{data.node}}
+                    </div>
+                  </div>
+                  {{#if data.caption}}
+                    <div class="swiper-slide-content">
+                      {{htmlSafe data.caption}}
+                    </div>
+                  {{/if}}
+
                   {{!-- testing nested swiper. Disabled for now
                   {{else if (eq data.type "nested")}}
                     <div class="swiper nested-swiper swiper-v">
