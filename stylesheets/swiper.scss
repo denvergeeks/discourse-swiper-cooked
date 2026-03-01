@@ -735,3 +735,181 @@
     transform-origin: center bottom;
   }
 }
+
+// NEW: Custom styles for iframe and cooked content slides
+
+// iFrame wrapper styling
+.swiper-iframe-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-very-low);
+  
+  iframe {
+    width: 100%;
+    height: 100%;
+    max-height: 600px;
+    border: none;
+    border-radius: 4px;
+  }
+}
+
+// Cooked content wrapper styling
+.swiper-cooked-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1.5rem;
+  background: var(--secondary);
+  
+  .cooked-content {
+    max-width: 800px;
+    margin: 0 auto;
+    color: var(--primary);
+    
+    // Inherit Discourse cooked post styles
+    p, ul, ol, blockquote {
+      margin-bottom: 1em;
+      line-height: 1.6;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.75em;
+      font-weight: bold;
+      line-height: 1.3;
+    }
+    
+    h1 { font-size: 2em; }
+    h2 { font-size: 1.5em; }
+    h3 { font-size: 1.25em; }
+    h4 { font-size: 1.1em; }
+    
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 1em auto;
+    }
+    
+    // Preserve lightbox functionality
+    .lightbox-wrapper {
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    
+    // Code blocks
+    pre {
+      background: var(--primary-very-low);
+      padding: 1em;
+      border-radius: 4px;
+      overflow-x: auto;
+      
+      code {
+        background: transparent;
+        padding: 0;
+      }
+    }
+    
+    code {
+      background: var(--primary-very-low);
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    
+    // Links
+    a {
+      color: var(--tertiary);
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    
+    // Lists
+    ul, ol {
+      padding-left: 2em;
+    }
+    
+    // Blockquotes
+    blockquote {
+      border-left: 4px solid var(--primary-low);
+      padding-left: 1em;
+      color: var(--primary-medium);
+      font-style: italic;
+    }
+    
+    // Tables
+    table {
+      width: 100%;
+      margin: 1em 0;
+      border-collapse: collapse;
+      
+      th, td {
+        padding: 0.5em;
+        border: 1px solid var(--primary-low);
+        text-align: left;
+      }
+      
+      th {
+        background: var(--primary-very-low);
+        font-weight: bold;
+      }
+    }
+  }
+}
+
+// Thumbnail styling for cooked content (used in thumbs navigation)
+.cooked-thumbnail {
+  background: var(--primary-very-low);
+  padding: 1rem;
+  border-radius: 4px;
+  color: var(--primary);
+  font-size: 0.85em;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Caption/slide content styling (applies to all slide types)
+.swiper-slide-content {
+  padding: 0.75rem 1rem;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  text-align: center;
+  font-size: 0.9em;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  
+  p {
+    margin: 0;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .swiper-cooked-wrapper {
+    padding: 1rem;
+    
+    .cooked-content {
+      font-size: 0.95em;
+    }
+  }
+  
+  .swiper-iframe-wrapper iframe {
+    max-height: 400px;
+  }
+}
