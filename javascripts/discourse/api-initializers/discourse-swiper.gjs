@@ -19,10 +19,16 @@ function initializeSwiper(api) {
       container.dataset[camelize(key)] = value;
     }
 
+    // Parse topics attribute if present
+    const topicIds = element.dataset.topics 
+      ? TopicFetcher.parseTopicIds(element.dataset) 
+      : null;
+
     helper.renderGlimmer(container, SwiperInline, {
       preview: isPreview,
       config: parseWrapParam({ ...element.dataset }),
       parsedData: MediaElementParser.run(element),
+      topicIds: topicIds, // NEW
     });
 
     element.replaceWith(container);
