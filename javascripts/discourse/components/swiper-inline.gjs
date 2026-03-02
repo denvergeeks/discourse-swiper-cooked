@@ -1,6 +1,7 @@
 import Component from "@glimmer/component";
-import { cached, tracked } from "@glimmer/tracking";
+import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
+import { cached } from "@glimmer/tracking";
 import didInsert from "@ember/render-modifiers/modifiers/did-insert";
 import didUpdate from "@ember/render-modifiers/modifiers/did-update";
 import willDestroy from "@ember/render-modifiers/modifiers/will-destroy";
@@ -210,7 +211,7 @@ export default class SwiperInline extends Component {
 
       pagination: this.config.pagination.enabled
         ? {
-            clickable: this.config.pagination.clickabkle,
+            clickable: this.config.pagination.clickable,
             type: this.config.pagination.type,
             el: ".swiper-pagination",
           }
@@ -304,7 +305,7 @@ export default class SwiperInline extends Component {
     }
 
     // Post view
-    if (this.data && !this.data.preview) {
+    if (this.args.data && !this.args.data.preview) {
       lightbox(this.swiperWrapElement, this.siteSettings);
     }
 
