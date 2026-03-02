@@ -1,5 +1,5 @@
 import Component from "@glimmer/component";
-import { cached } from "@glimmer/tracking";
+import { cached, tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
 import didInsert from "@ember/render-modifiers/modifiers/did-insert";
 import didUpdate from "@ember/render-modifiers/modifiers/did-update";
@@ -43,10 +43,12 @@ export default class SwiperInline extends Component {
         topicId: topic.topicId,
         title: topic.title,
         cooked: topic.cooked,
-        thumbnail: this.createTopicThumbnail(topic),
+        thumbnailNode: this.createTopicThumbnail(topic),
+        node: this.createTopicSlideNode(topic),
+        caption: null,
       }));
       
-      // Reinitialize swiper with new slides
+      // Reinitialize swiper with new slides if already initialized
       if (this.mainSlider) {
         this.destroySwiper();
         this.initializeSwiper(this.swiperWrapElement);
@@ -58,13 +60,28 @@ export default class SwiperInline extends Component {
     }
   }
 
+  createTopicSlideNode(topic) {
+    // Create the actual slide content node
+    const div = document.createElement("div");
+    div.className = "topic-slide-content";
+    div.innerHTML = `
+      <div class="topic-slide-header">
+        <h3>${escapeExpression(topic.title)}</h3>
+      </div>
+      <div class="topic-slide-body">
+        ${topic.cooked}
+      </div>
+    `;
+    return div;
+  }
+
   createTopicThumbnail(topic) {
-    // Create a thumbnail element from topic data
+    // Create a thumbnail element from topic data for navigation
     const div = document.createElement("div");
     div.className = "topic-thumbnail";
     div.innerHTML = `
-      <div class="topic-thumbnail-title">${topic.title}</div>
-      ${topic.excerpt ? `<div class="topic-thumbnail-excerpt">${topic.excerpt}</div>` : ""}
+      <div class="topic-thumbnail-title">${escapeExpression(topic.title)}</div>
+      ${topic.excerpt ? `<div class="topic-thumbnail-excerpt">${escapeExpression(topic.excerpt)}</div>` : ""}
     `;
     return div;
   }
@@ -146,26 +163,6 @@ export default class SwiperInline extends Component {
       });
     }
 
-    /*this.nestedSliders = [];
-
-    this.swiperWrapElement.querySelectorAll(".nested-swiper").forEach((el) => {
-      this.nestedSliders.push(
-        new Swiper(el, {
-          spaceBetween: 50,
-          direction: "vertical",
-          autoHeight: true,
-          pagination: {
-            el: ".swiper-pagination",
-            clickable: true,
-          },
-          navigation: {
-            nextEl: ".swiper-button-next",
-            prevEl: ".swiper-button-prev",
-          },
-        })
-      );
-    });*/
-
     const slideElement = this.swiperWrapElement.querySelector(".main-slider");
 
     this.mainSlider = new window.Swiper(slideElement, {
@@ -191,7 +188,6 @@ export default class SwiperInline extends Component {
         : false,
 
       autoHeight: this.config.autoHeight,
-      //grabCursor: this.config.grabCursor,
 
       loop: this.config.loop,
       rewind: this.config.rewind,
@@ -245,14 +241,6 @@ export default class SwiperInline extends Component {
         modifier: 1,
         slideShadows: true,
       },
-
-      // Widht/height makes swiper not responsive
-      /*width: this.config?.slideWidth
-          ? parseInt(this.config.slideWidth)
-          : null,
-        height: this.config?.slideHeight
-          ? parseInt(this.config.slideHeight)
-          : null,*/
 
       hoverThumbs: {
         enabled: this.config.thumbs.enabled && this.config.thumbs.slideOnHover,
@@ -360,7 +348,12 @@ export default class SwiperInline extends Component {
     >
       <div class="swiper main-slider">
         <div class="swiper-wrapper">
-          {{#if @node.images}}
+          {{#if this.isLoadingTopics}}
+            <div class="swiper-slide loading-slide">
+              <div class="loading-spinner"></div>
+              <p>Loading topics...</p>
+            </div>
+          {{else if @node.images}}
             {{#each @node.images as |node|}}
               <div class="swiper-slide">
                 <img
@@ -377,30 +370,14 @@ export default class SwiperInline extends Component {
                     "true"
                   }}
                 />
-                {{!-- testing caption. Disabled for now.
-                {{#if node.attrs.caption}}
-                  <div class="swiper-slide-content">
-                    {{node.attrs.caption}}
-                  </div>
-                {{/if}}
-                --}}
               </div>
             {{/each}}
           {{else}}
-            {{#each @data.parsedData as |data|}}
+            {{#each this.allSlides as |data|}}
               <div class="swiper-slide">
                 {{#if (eq data.type "image")}}
                   {{data.node}}
 
-                  {{!-- testing caption. Disabled for now.
-                  {{#if data.caption}}
-                    <div class="swiper-slide-content">
-                      {{htmlSafe data.caption}}
-                    </div>
-                  {{/if}}
-                --}}
-
-                {{!-- NEW: iFrame support --}}
                 {{else if (eq data.type "iframe")}}
                   <div class="swiper-iframe-wrapper">
                     {{data.node}}
@@ -411,7 +388,6 @@ export default class SwiperInline extends Component {
                     </div>
                   {{/if}}
 
-                {{!-- NEW: Cooked content support --}}
                 {{else if (eq data.type "cooked")}}
                   <div class="swiper-cooked-wrapper">
                     <div class="cooked-content">
@@ -424,21 +400,28 @@ export default class SwiperInline extends Component {
                     </div>
                   {{/if}}
 
-                  {{!-- testing nested swiper. Disabled for now
-                  {{else if (eq data.type "nested")}}
-                    <div class="swiper nested-swiper swiper-v">
-                      <div class="swiper-wrapper">
-                        {{#each data.items as |item|}}
-                          <div class="swiper-slide">
-                            <div class="super-flow-image">{{item.node}}</div>
-                          </div>
-                        {{/each}}
-                      </div>
-                      <div class="swiper-pagination"></div>
-                      <div class="swiper-button-next"></div>
-                      <div class="swiper-button-prev"></div>
+                {{else if (eq data.type "textcontent")}}
+                  <div class="swiper-text-wrapper">
+                    <div class="text-content">
+                      {{data.node}}
                     </div>
-                --}}
+                  </div>
+                  {{#if data.caption}}
+                    <div class="swiper-slide-content">
+                      {{htmlSafe data.caption}}
+                    </div>
+                  {{/if}}
+
+                {{else if (eq data.type "topic-slide")}}
+                  <div class="swiper-topic-slide">
+                    {{data.node}}
+                  </div>
+                  {{#if data.caption}}
+                    <div class="swiper-slide-content">
+                      {{htmlSafe data.caption}}
+                    </div>
+                  {{/if}}
+
                 {{/if}}
               </div>
             {{/each}}
@@ -508,7 +491,7 @@ export default class SwiperInline extends Component {
               {{/each}}
 
             {{else}}
-              {{#each @data.parsedData as |data|}}
+              {{#each this.allSlides as |data|}}
                 <div class="swiper-slide">
                   {{data.thumbnailNode}}
                 </div>
