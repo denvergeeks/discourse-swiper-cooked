@@ -1,7 +1,7 @@
 {
-  "name": "discourse-swiper",
+  "name": "discourse-swiper-cooked",
   "component": true,
-  "authors": "Arkshine",
+  "authors": "Arkshine, @denvergeeks",
   "about_url": "TODO: Put your theme's public repo or Meta topic URL here",
   "license_url": "TODO: Put your theme's LICENSE URL here",
   "learn_more": "TODO",
