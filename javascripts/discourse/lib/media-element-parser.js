@@ -23,7 +23,7 @@ export default class MediaElementParser {
    * Parses a DOM root element and extract media elements with captions
    * Captions are any element following the media element until another media element or non-paragraph element
    *
-   * Extended to support iframes and cooked content blocks
+   * Extended to support iframes, blockquotes, and details elements as content slides
    *
    * @param {HTMLElement} root
    * @returns {Array} items
@@ -40,14 +40,28 @@ export default class MediaElementParser {
         continue;
       }
 
-      // NEW: Handle iFrames
+      // Handle iFrames
       if (this.isIframe(node)) {
         const captionHtml = this.extractFollowingCaption(nodes, i + 1);
         this.pushMediaItem(items, "iframe", node, captionHtml);
         continue;
       }
 
-      // NEW: Handle cooked content blocks
+      // NEW: Handle blockquote elements as text content slides
+      if (this.isBlockquote(node)) {
+        const captionHtml = this.extractFollowingCaption(nodes, i + 1);
+        this.pushMediaItem(items, "textcontent", node, captionHtml);
+        continue;
+      }
+
+      // NEW: Handle details elements as text content slides
+      if (this.isDetails(node)) {
+        const captionHtml = this.extractFollowingCaption(nodes, i + 1);
+        this.pushMediaItem(items, "textcontent", node, captionHtml);
+        continue;
+      }
+
+      // Original: Handle cooked content blocks (kept for backward compatibility, though unlikely to work)
       if (this.isCookedContent(node)) {
         const captionHtml = this.extractFollowingCaption(nodes, i + 1);
         this.pushMediaItem(items, "cooked", node, captionHtml);
@@ -92,14 +106,30 @@ export default class MediaElementParser {
           ? node.tagName === "IMG"
             ? node.cloneNode(true)
             : node.querySelector("img:not(.emoji)")?.cloneNode(true)
-          : type === "cooked"
-          ? this.createCookedThumbnail(node)
+          : type === "textcontent" || type === "cooked"
+          ? this.createTextThumbnail(node)
           : null,
       caption: this.wrapCaption(captionHtml),
     });
   }
 
-  // NEW: Detect iFrame elements
+  // NEW: Detect blockquote elements
+  static isBlockquote(node) {
+    return (
+      node.nodeType === Node.ELEMENT_NODE &&
+      node.tagName === "BLOCKQUOTE"
+    );
+  }
+
+  // NEW: Detect details elements
+  static isDetails(node) {
+    return (
+      node.nodeType === Node.ELEMENT_NODE &&
+      node.tagName === "DETAILS"
+    );
+  }
+
+  // Detect iFrame elements
   static isIframe(node) {
     return (
       node.nodeType === Node.ELEMENT_NODE &&
@@ -109,7 +139,7 @@ export default class MediaElementParser {
     );
   }
 
-  // NEW: Detect cooked content blocks (marked with specific class or data attribute)
+  // Detect cooked content blocks (marked with specific class or data attribute)
   static isCookedContent(node) {
     return (
       node.nodeType === Node.ELEMENT_NODE &&
@@ -121,19 +151,29 @@ export default class MediaElementParser {
     );
   }
 
-  // NEW: Create thumbnail for cooked content (first image or text preview)
-  static createCookedThumbnail(node) {
-    // Try to find first image for thumbnail
-    const img = node.querySelector("img:not(.emoji)");
-    if (img) {
-      return img.cloneNode(true);
+  // NEW: Create thumbnail for text content (first text or heading)
+  static createTextThumbnail(node) {
+    const thumbnail = document.createElement("div");
+    thumbnail.className = "text-thumbnail";
+    
+    // Try to get heading text first
+    const heading = node.querySelector("h1, h2, h3, h4, h5, h6");
+    if (heading) {
+      thumbnail.textContent = heading.textContent?.trim().substring(0, 50) || "Text Slide";
+      return thumbnail;
     }
     
-    // Fallback: create text-based thumbnail
-    const thumbnail = document.createElement("div");
-    thumbnail.className = "cooked-thumbnail";
-    const textContent = node.textContent?.trim().substring(0, 100) || "Content";
-    thumbnail.textContent = textContent + (textContent.length >= 100 ? "..." : "");
+    // Fall back to first paragraph or summary
+    const firstP = node.querySelector("p, summary");
+    if (firstP) {
+      const text = firstP.textContent?.trim().substring(0, 50) || "Content";
+      thumbnail.textContent = text + (text.length >= 50 ? "..." : "");
+      return thumbnail;
+    }
+    
+    // Ultimate fallback
+    const textContent = node.textContent?.trim().substring(0, 50) || "Text Slide";
+    thumbnail.textContent = textContent + (textContent.length >= 50 ? "..." : "");
     return thumbnail;
   }
 
@@ -161,14 +201,15 @@ export default class MediaElementParser {
     return node.nodeType === Node.ELEMENT_NODE && node.matches?.("div.d-wrap");
   }
 
-  // Collect subsequent <p> elements (until a wrap/video/iframe/cooked/element that's not <p>)
+  // Collect subsequent <p> elements (until a wrap/video/iframe/blockquote/details/element that's not <p>)
   static extractFollowingCaption(nodes, startIndex) {
     let html = "";
 
     for (let i = startIndex; i < nodes.length; i++) {
       const n = nodes[i];
 
-      if (this.isWrap(n) || this.isVideo(n) || this.isIframe(n) || this.isCookedContent(n)) {
+      if (this.isWrap(n) || this.isVideo(n) || this.isIframe(n) || 
+          this.isBlockquote(n) || this.isDetails(n) || this.isCookedContent(n)) {
         break;
       }
 
