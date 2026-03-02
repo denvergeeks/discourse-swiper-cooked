@@ -736,7 +736,9 @@
   }
 }
 
-// NEW: Custom styles for iframe and cooked content slides
+// ============================================================================
+// CUSTOM STYLES: iFrame, Cooked Content, Text Content, and Topic Slides
+// ============================================================================
 
 // iFrame wrapper styling
 .swiper-iframe-wrapper {
@@ -756,7 +758,7 @@
   }
 }
 
-// Cooked content wrapper styling
+// Cooked content wrapper styling (for generic cooked blocks)
 .swiper-cooked-wrapper {
   width: 100%;
   height: 100%;
@@ -864,21 +866,215 @@
   }
 }
 
-// Thumbnail styling for cooked content (used in thumbs navigation)
-.cooked-thumbnail {
-  background: var(--primary-very-low);
-  padding: 1rem;
-  border-radius: 4px;
-  color: var(--primary);
-  font-size: 0.85em;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+// Text content wrapper (for blockquotes and details elements)
+.swiper-text-wrapper {
+  width: 100%;
   height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2rem;
+  background: var(--secondary);
   display: flex;
   align-items: center;
   justify-content: center;
+  
+  .text-content {
+    max-width: 700px;
+    margin: 0 auto;
+    color: var(--primary);
+    font-size: 1.1em;
+    line-height: 1.7;
+    
+    blockquote {
+      border-left: 4px solid var(--tertiary);
+      padding-left: 1.5em;
+      font-style: italic;
+      font-size: 1.2em;
+      margin: 0;
+    }
+    
+    details {
+      summary {
+        cursor: pointer;
+        font-weight: bold;
+        margin-bottom: 1em;
+        font-size: 1.2em;
+        
+        &:hover {
+          color: var(--tertiary);
+        }
+      }
+    }
+  }
+}
+
+// NEW: Topic slide styling (fetched from Discourse API)
+.swiper-topic-slide {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--secondary);
+  
+  .topic-slide-content {
+    padding: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  
+  .topic-slide-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--primary-low);
+    
+    h3 {
+      margin: 0;
+      color: var(--primary);
+      font-size: 1.75em;
+      font-weight: bold;
+      line-height: 1.3;
+    }
+  }
+  
+  .topic-slide-body {
+    color: var(--primary);
+    font-size: 1em;
+    line-height: 1.6;
+    
+    // Inherit all Discourse cooked content styles
+    p, ul, ol {
+      margin-bottom: 1em;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.75em;
+      font-weight: bold;
+    }
+    
+    h1 { font-size: 1.8em; }
+    h2 { font-size: 1.5em; }
+    h3 { font-size: 1.3em; }
+    h4 { font-size: 1.15em; }
+    
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 1em auto;
+    }
+    
+    .lightbox-wrapper {
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    
+    pre {
+      background: var(--primary-very-low);
+      padding: 1em;
+      border-radius: 4px;
+      overflow-x: auto;
+      
+      code {
+        background: transparent;
+        padding: 0;
+      }
+    }
+    
+    code {
+      background: var(--primary-very-low);
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    
+    a {
+      color: var(--tertiary);
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    
+    ul, ol {
+      padding-left: 2em;
+    }
+    
+    blockquote {
+      border-left: 4px solid var(--primary-low);
+      padding-left: 1em;
+      color: var(--primary-medium);
+      font-style: italic;
+    }
+    
+    table {
+      width: 100%;
+      margin: 1em 0;
+      border-collapse: collapse;
+      
+      th, td {
+        padding: 0.5em;
+        border: 1px solid var(--primary-low);
+        text-align: left;
+      }
+      
+      th {
+        background: var(--primary-very-low);
+        font-weight: bold;
+      }
+    }
+  }
+}
+
+// Thumbnail styling for navigation
+.cooked-thumbnail,
+.text-thumbnail,
+.topic-thumbnail {
+  background: var(--primary-very-low);
+  padding: 0.75rem;
+  border-radius: 4px;
+  color: var(--primary);
+  text-align: center;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.cooked-thumbnail,
+.text-thumbnail {
+  font-size: 0.85em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topic-thumbnail {
+  .topic-thumbnail-title {
+    font-weight: bold;
+    color: var(--primary);
+    font-size: 0.9em;
+    margin-bottom: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+  }
+  
+  .topic-thumbnail-excerpt {
+    font-size: 0.75em;
+    color: var(--primary-medium);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    line-height: 1.4;
+  }
 }
 
 // Caption/slide content styling (applies to all slide types)
@@ -897,6 +1093,42 @@
   p {
     margin: 0;
   }
+  
+  .caption {
+    margin: 0;
+  }
+}
+
+// Loading state for topic slides
+.loading-slide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  background: var(--secondary);
+  
+  .loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--primary-low);
+    border-top-color: var(--tertiary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+  
+  p {
+    color: var(--primary-medium);
+    font-size: 1.1em;
+    margin: 0;
+  }
+}
+
+@keyframes spin {
+  to { 
+    transform: rotate(360deg); 
+  }
 }
 
 // Responsive adjustments
@@ -909,7 +1141,62 @@
     }
   }
   
+  .swiper-text-wrapper {
+    padding: 1.5rem;
+    
+    .text-content {
+      font-size: 1em;
+    }
+  }
+  
+  .swiper-topic-slide {
+    .topic-slide-content {
+      padding: 1rem;
+    }
+    
+    .topic-slide-header h3 {
+      font-size: 1.4em;
+    }
+    
+    .topic-slide-body {
+      font-size: 0.95em;
+    }
+  }
+  
   .swiper-iframe-wrapper iframe {
     max-height: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .swiper-topic-slide {
+    .topic-slide-content {
+      padding: 0.75rem;
+    }
+    
+    .topic-slide-header {
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      
+      h3 {
+        font-size: 1.25em;
+      }
+    }
+    
+    .topic-slide-body {
+      font-size: 0.9em;
+    }
+  }
+  
+  .topic-thumbnail {
+    padding: 0.5rem;
+    
+    .topic-thumbnail-title {
+      font-size: 0.8em;
+    }
+    
+    .topic-thumbnail-excerpt {
+      font-size: 0.7em;
+    }
   }
 }
