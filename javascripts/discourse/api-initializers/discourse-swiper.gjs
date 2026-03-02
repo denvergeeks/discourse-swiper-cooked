@@ -2,6 +2,7 @@ import { camelize } from "@ember/string";
 import { apiInitializer } from "discourse/lib/api";
 import SwiperInline from "../components/swiper-inline";
 import MediaElementParser from "../lib/media-element-parser";
+import TopicFetcher from "../lib/topic-fetcher";
 import swiperExtension from "../lib/rich-editor-extension";
 import { parseWrapParam } from "../lib/utils";
 
@@ -21,14 +22,14 @@ function initializeSwiper(api) {
 
     // Parse topics attribute if present
     const topicIds = element.dataset.topics 
-      ? TopicFetcher.parseTopicIds(element.dataset) 
+      ? TopicFetcher.parseTopicIds(element.dataset.topics) 
       : null;
 
     helper.renderGlimmer(container, SwiperInline, {
       preview: isPreview,
       config: parseWrapParam({ ...element.dataset }),
       parsedData: MediaElementParser.run(element),
-      topicIds: topicIds, // NEW
+      topicIds: topicIds,
     });
 
     element.replaceWith(container);
