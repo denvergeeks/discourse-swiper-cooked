@@ -8,6 +8,7 @@ import willDestroy from "@ember/render-modifiers/modifiers/will-destroy";
 import { service } from "@ember/service";
 import { htmlSafe } from "@ember/template";
 import { and, eq } from "truth-helpers";
+import { on } from "@ember/modifier";
 import noop from "discourse/helpers/noop";
 import lightbox from "discourse/lib/lightbox";
 import loadScript from "discourse/lib/load-script";
@@ -22,6 +23,8 @@ export default class SwiperInline extends Component {
   @service activeSwiperInEditor;
   @tracked topicSlides = [];
   @tracked isLoadingTopics = false;
+  @tracked overlayModal = null;
+  @tracked overlaySwiper = null;
 
   constructor() {
     super(...arguments);
@@ -30,6 +33,11 @@ export default class SwiperInline extends Component {
     if (this.args.topicIds && this.args.topicIds.length > 0) {
       this.loadTopicSlides();
     }
+  }
+
+  willDestroy() {
+    super.willDestroy(...arguments);
+    this.closeOverlay();
   }
 
   async loadTopicSlides() {
@@ -108,6 +116,143 @@ export default class SwiperInline extends Component {
   didUpdateAttrs() {
     this.destroySwiper();
     this.initializeSwiper(this.swiperWrapElement);
+  }
+
+  @action
+  handleSlideClick(index, event) {
+    // Don't open overlay if clicking on a link or lightbox image
+    if (event.target.closest('a, .lightbox-wrapper')) {
+      return;
+    }
+    
+    const slide = this.allSlides[index];
+    // Only open overlay for topic slides and cooked content
+    if (slide?.type === "topic-slide" || slide?.type === "cooked" || slide?.type === "textcontent") {
+      this.showInOverlay(index);
+    }
+  }
+
+  @action
+  showInOverlay(slideIndex) {
+    // Create custom fullscreen modal
+    const modal = document.createElement("div");
+    modal.className = "swiper-fullscreen-modal";
+    
+    // Build slides HTML
+    const slidesHtml = this.allSlides.map((data, idx) => {
+      let slideContent = '';
+      
+      if (data.type === "topic-slide") {
+        slideContent = `
+          <div class="swiper-topic-slide">
+            ${data.node.outerHTML}
+          </div>
+        `;
+      } else if (data.type === "cooked") {
+        slideContent = `
+          <div class="swiper-cooked-wrapper">
+            <div class="cooked-content">
+              ${data.node.outerHTML}
+            </div>
+          </div>
+        `;
+      } else if (data.type === "textcontent") {
+        slideContent = `
+          <div class="swiper-text-wrapper">
+            <div class="text-content">
+              ${data.node.outerHTML}
+            </div>
+          </div>
+        `;
+      } else if (data.type === "image") {
+        slideContent = data.node.outerHTML;
+      } else if (data.type === "iframe") {
+        slideContent = `
+          <div class="swiper-iframe-wrapper">
+            ${data.node.outerHTML}
+          </div>
+        `;
+      }
+      
+      return `<div class="swiper-slide">${slideContent}</div>`;
+    }).join('');
+    
+    modal.innerHTML = `
+      <div class="modal-container">
+        <button class="modal-close" aria-label="Close">&times;</button>
+        <div class="modal-content-area">
+          <div class="swiper modal-swiper">
+            <div class="swiper-wrapper">
+              ${slidesHtml}
+            </div>
+            <div class="swiper-button-next"><span class="arrow-icon"></span></div>
+            <div class="swiper-button-prev"><span class="arrow-icon"></span></div>
+            <div class="swiper-pagination"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    this.overlayModal = modal;
+    
+    // Initialize overlay swiper
+    const modalSwiperEl = modal.querySelector('.modal-swiper');
+    this.overlaySwiper = new window.Swiper(modalSwiperEl, {
+      initialSlide: slideIndex,
+      direction: 'horizontal',
+      navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+      },
+      pagination: {
+        el: '.swiper-pagination',
+        type: 'fraction',
+      },
+      keyboard: {
+        enabled: true,
+      },
+      autoHeight: true,
+    });
+    
+    // Event listeners
+    const closeBtn = modal.querySelector('.modal-close');
+    closeBtn.addEventListener('click', () => this.closeOverlay());
+    
+    // Close on background click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        this.closeOverlay();
+      }
+    });
+    
+    // Close on Escape key
+    const escapeHandler = (e) => {
+      if (e.key === 'Escape') {
+        this.closeOverlay();
+      }
+    };
+    document.addEventListener('keydown', escapeHandler);
+    modal.dataset.escapeHandler = 'attached';
+    
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+  }
+
+  @action
+  closeOverlay() {
+    if (this.overlaySwiper) {
+      this.overlaySwiper.destroy(true, true);
+      this.overlaySwiper = null;
+    }
+    
+    if (this.overlayModal) {
+      this.overlayModal.remove();
+      this.overlayModal = null;
+    }
+    
+    // Restore body scroll
+    document.body.style.overflow = '';
   }
 
   @action
@@ -374,8 +519,13 @@ export default class SwiperInline extends Component {
               </div>
             {{/each}}
           {{else}}
-            {{#each this.allSlides as |data|}}
-              <div class="swiper-slide">
+            {{#each this.allSlides as |data index|}}
+              <div 
+                class="swiper-slide" 
+                {{on "click" (fn this.handleSlideClick index)}}
+                role={{if (eq data.type "topic-slide") "button" ""}}
+                tabindex={{if (eq data.type "topic-slide") "0" ""}}
+              >
                 {{#if (eq data.type "image")}}
                   {{data.node}}
 
