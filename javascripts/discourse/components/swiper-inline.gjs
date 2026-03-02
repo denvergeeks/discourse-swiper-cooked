@@ -14,10 +14,67 @@ import { deepMerge } from "discourse/lib/object";
 import { escapeExpression } from "discourse/lib/utilities";
 import { DEFAULT_SETTINGS } from "../lib/constants";
 import { normalizeSettings } from "../lib/utils";
+import TopicFetcher from "../lib/topic-fetcher";
 
 export default class SwiperInline extends Component {
   @service siteSettings;
   @service activeSwiperInEditor;
+  @tracked topicSlides = [];
+  @tracked isLoadingTopics = false;
+
+  constructor() {
+    super(...arguments);
+    
+    // If topics are specified, fetch them
+    if (this.args.topicIds && this.args.topicIds.length > 0) {
+      this.loadTopicSlides();
+    }
+  }
+
+  async loadTopicSlides() {
+    this.isLoadingTopics = true;
+    
+    try {
+      const topics = await TopicFetcher.fetchMultipleTopics(this.args.topicIds);
+      
+      // Convert topics to slide items
+      this.topicSlides = topics.map(topic => ({
+        type: "topic-slide",
+        topicId: topic.topicId,
+        title: topic.title,
+        cooked: topic.cooked,
+        thumbnail: this.createTopicThumbnail(topic),
+      }));
+      
+      // Reinitialize swiper with new slides
+      if (this.mainSlider) {
+        this.destroySwiper();
+        this.initializeSwiper(this.swiperWrapElement);
+      }
+    } catch (error) {
+      console.error("Error loading topic slides:", error);
+    } finally {
+      this.isLoadingTopics = false;
+    }
+  }
+
+  createTopicThumbnail(topic) {
+    // Create a thumbnail element from topic data
+    const div = document.createElement("div");
+    div.className = "topic-thumbnail";
+    div.innerHTML = `
+      <div class="topic-thumbnail-title">${topic.title}</div>
+      ${topic.excerpt ? `<div class="topic-thumbnail-excerpt">${topic.excerpt}</div>` : ""}
+    `;
+    return div;
+  }
+
+  @cached
+  get allSlides() {
+    // Combine regular parsed data with topic slides
+    const regular = this.args.data?.parsedData || [];
+    return [...regular, ...this.topicSlides];
+  }
 
   async loadSwiper() {
     await loadScript(settings.theme_uploads_local.swiper_js);
